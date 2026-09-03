@@ -12,33 +12,33 @@ def start_client():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((server_address, server_port))
         print("[INFO] Conectado ao servidor.")
-        a = "nao"
 
-        while a == "nao":
+        # Servidor envia a operação
+        data = client_socket.recv(40).decode()
+        print(f"{data}")
 
+        while True:
             # Servidor envia a operação
-            data = client_socket.recv(40).decode()
-            print(f"{data}")
             data = client_socket.recv(40).decode()
             print(f"Resolva: {data}")
 
             #Usuario digita a resposta
             resposta = input("Resposta: ")
-            client_socket.send(resposta.encode())
-            
+            client_socket.send(resposta.encode())      
 
-                # Aguarda a resposta do servidor
+            # Aguarda a resposta do servidor
             resultado = client_socket.recv(40).decode()
             print(f"Recebido: {resultado}")
-                
+
+            sair = input("Quer sair? digite 'sim': ")
+
+            if sair.lower() == "sim":
+              break
+
             # Espera 2 segundos antes de enviar o próximo pedido
-            print(f"Quer sair? digite: sim")
-            a = input("")
-
-
             time.sleep(2)
 
-# Início da execução
+    # Início da execução
 if __name__ == "__main__":
     start_client()
 

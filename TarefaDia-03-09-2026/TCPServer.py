@@ -15,7 +15,7 @@ class ClientThread(threading.Thread):
     def run(self):
         try:
             # Inicio de jogo - Mensagem
-            response = f"Bem vindo ao jogo da calculadora"
+            response = "Bem vindo ao jogo da calculadora"
             self.client_socket.send(response.encode())
 
             while True:
@@ -26,8 +26,6 @@ class ClientThread(threading.Thread):
                 op = random.choice(operacoes)
                 response = f"{a} {op} {b} ="
                 self.client_socket.send(response.encode())
-
-
 
                 # Recebe a resposta do cliente
                 resposta = self.client_socket.recv(40).decode()
@@ -43,7 +41,7 @@ class ClientThread(threading.Thread):
                   resultado = a * b
 
                 elif op == '/':
-                  resultado = a / b
+                  resultado = round(a / b, 1)
 
                 if not resposta:
                     break
