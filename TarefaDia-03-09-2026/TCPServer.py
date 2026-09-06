@@ -1,4 +1,11 @@
 # Késsia e Ana Paula
+# Protocolo escolhido TCP
+# Escolhemos o protocolo TCP por ser um protocolo 
+# confiável para o jogo já que o cliente envia uma string contendo 
+# a resposta da operação, o servidor recebe e processa essa string, 
+# verifica se a resposta está correta e devolve uma mensagem em 
+# formato de string ao cliente assim precisando que nenhuma 
+# mensagem possa ser perdida no caminho
 import socket
 import threading
 import random

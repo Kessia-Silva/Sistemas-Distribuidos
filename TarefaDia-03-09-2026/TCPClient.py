@@ -1,8 +1,9 @@
 # Késsia e Ana Paula
+# Protocolo escolhido TCP
 import socket
 import time
 # Função principal do cliente
-#Jogo da Calculadora - usuario - servidor em que o 
+#Jogo da Calculadora - usuário - servidor em que o 
 #servidor vai mandar uma operação e o cliente irá responder
 def start_client():
     server_address = '127.0.0.1'
