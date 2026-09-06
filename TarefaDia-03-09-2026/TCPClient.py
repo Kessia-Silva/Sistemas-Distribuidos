@@ -2,7 +2,7 @@
 import socket
 import time
 # Função principal do cliente
-#Jogo: Advinhe o valor - usuario - servidor em que o 
+#Jogo da Calculadora - usuario - servidor em que o 
 #servidor vai mandar uma operação e o cliente irá responder
 def start_client():
     server_address = '127.0.0.1'
@@ -13,7 +13,7 @@ def start_client():
         client_socket.connect((server_address, server_port))
         print("[INFO] Conectado ao servidor.")
 
-        # Servidor envia a operação
+        # Servidor envia o titulo
         data = client_socket.recv(40).decode()
         print(f"{data}")
 
@@ -22,7 +22,7 @@ def start_client():
             data = client_socket.recv(40).decode()
             print(f"Resolva: {data}")
 
-            #Usuario digita a resposta
+            # Usuario digita a resposta
             resposta = input("Resposta: ")
             client_socket.send(resposta.encode())      
 
@@ -38,7 +38,7 @@ def start_client():
             # Espera 2 segundos antes de enviar o próximo pedido
             time.sleep(2)
 
-    # Início da execução
+# Início da execução
 if __name__ == "__main__":
     start_client()
 

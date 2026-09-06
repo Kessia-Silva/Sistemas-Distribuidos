@@ -19,12 +19,13 @@ class ClientThread(threading.Thread):
             self.client_socket.send(response.encode())
 
             while True:
-                # Usuario escolheu iniciar
+                # numeros e operações randomizadas
                 operacoes = ['+', '-', '*', '/']
                 a = random.randint(1, 100)
                 b = random.randint(1, 100)
                 op = random.choice(operacoes)
                 response = f"{a} {op} {b} ="
+                #envia operação para o cliente
                 self.client_socket.send(response.encode())
 
                 # Recebe a resposta do cliente
@@ -41,7 +42,7 @@ class ClientThread(threading.Thread):
                   resultado = a * b
 
                 elif op == '/':
-                  resultado = round(a / b, 1)
+                  resultado = round(a / b, 1) #permite uma casa decimal
 
                 if not resposta:
                     break
@@ -53,8 +54,6 @@ class ClientThread(threading.Thread):
                    print("Resposta incorreta!")
                    self.client_socket.send(
                    f"Errado! A resposta correta é {resultado}".encode())
-    
-                
                 
         except Exception as e:
             print(f"[ERRO] {e}")
