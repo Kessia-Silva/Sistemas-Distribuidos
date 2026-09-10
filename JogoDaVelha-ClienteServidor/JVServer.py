@@ -113,24 +113,24 @@ class ServidorJogo:
         
         tab = Tabuleiro()
         # Mapeamento estático dos papéis de cada jogador
-        jogadores = [(j1, "X"), (j2, "O")]
+        jogadores = [(j1, "X",nome1), (j2, "O",nome2)]
 
         try:
             # Envia a mensagem de boas-vindas
-            for jogador, simbolo in jogadores:
-                jogador.receber_mensagem(f"\n--- A partida começou! Você joga com '{simbolo}' ---")
+            for jogador, simbolo,nome in jogadores:
+                jogador.receber_mensagem(f"\n--- A partida vai começar {nome}! Você joga com '{simbolo}' ---")
 
             atual = 0 # Índice que alterna entre 0 e 1 para gerenciar o turno
             
             # Loop principal do jogo
             while True:
-                jogador, simbolo = jogadores[atual]
-                outro_jogador, _ = jogadores[1 - atual]
+                jogador, simbolo, nome = jogadores[atual]
+                outro_jogador, outro_simbolo, outro_nome = jogadores[1 - atual]
 
                 # Atualiza a interface (CLI) de ambos os jogadores
                 jogador.receber_mensagem("\n" + tab.exibir())
                 outro_jogador.receber_mensagem("\n" + tab.exibir())
-                outro_jogador.receber_mensagem("Aguarde o turno do seu adversário...")
+                outro_jogador.receber_mensagem(f"{outro_nome} aguarde o turno do seu adversário {nome}...")
 
                 # --- PONTO DE SINCRONIZAÇÃO (RPC Bloqueante) ---
                 # A thread desta partida no servidor fica pausada (bloqueada) 
