@@ -1,7 +1,5 @@
-"""
-Created on Wed Sep  9 14:45:37 2026
-@author: massa
-"""
+# Alunas Ana Paula e Késsia
+
 import Pyro5.api
 import threading
 import time
