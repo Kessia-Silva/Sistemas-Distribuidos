@@ -5,6 +5,7 @@ Created on Wed Sep  9 14:45:37 2026
 
 import Pyro5.api
 import threading
+import time
 
 # ==========================================
 # 1. ABSTRAÇÃO: LÓGICA DE ESTADO DO JOGO
@@ -90,6 +91,27 @@ class ServidorJogo:
         # contra acessos simultâneos das threads do Pyro.
         self.lock_revanche = threading.Lock()
 
+        # ==========================================
+        # CONTROLE DE CONEXÃO DOS JOGADORES
+        # ==========================================
+        # Guarda o horário do último heartbeat recebido de cada jogador.
+        self.ultimos_heartbeats = {}
+
+        # Lock exclusivo para proteger o dicionário de heartbeats.
+        self.lock_heartbeat = threading.Lock()
+
+        # Guarda qual é o oponente de cada jogador que está em uma partida.
+        self.partidas = {}
+
+        # Lock exclusivo para proteger o controle das partidas.
+        self.lock_partidas = threading.Lock()
+
+        # Inicia a thread responsável por verificar jogadores desconectados.
+        threading.Thread(
+            target=self._monitorar_conexoes,
+            daemon=True
+        ).start()
+
         print("[SISTEMA] Estrutura de dados do servidor iniciada.")
 
     def iniciar_jogo(self, jogador_uri):
@@ -104,6 +126,10 @@ class ServidorJogo:
 
         print(f"[REDE] Novo jogador conectado. URI: {jogador_uri}")
 
+        # Registra o momento em que o jogador entrou no servidor.
+        with self.lock_heartbeat:
+            self.ultimos_heartbeats[jogador_uri] = time.time()
+
         # Seção Crítica: O Lock garante que apenas uma thread altere a fila por vez
         with self.lock:
 
@@ -115,6 +141,11 @@ class ServidorJogo:
 
                 uri1 = self.fila.pop(0)
                 uri2 = self.fila.pop(0)
+
+                # Registra os dois jogadores como participantes da mesma partida.
+                with self.lock_partidas:
+                    self.partidas[uri1] = uri2
+                    self.partidas[uri2] = uri1
 
                 print(
                     "[SISTEMA] 2 jogadores encontrados. "
@@ -167,7 +198,137 @@ class ServidorJogo:
         )
 
     # ==========================================
-    # 5. MÁQUINA DE ESTADOS DA PARTIDA
+    # 5. CONTROLE DE CONEXÃO
+    # ==========================================
+
+    def heartbeat(self, jogador_uri):
+
+        # Atualiza o horário do último sinal recebido do jogador.
+        with self.lock_heartbeat:
+            self.ultimos_heartbeats[jogador_uri] = time.time()
+
+    def desconectar(self, jogador_uri):
+
+        # Método chamado pelo cliente quando o jogador encerra
+        # voluntariamente o programa usando CTRL+C.
+        print(
+            f"[REDE] Jogador desconectou voluntariamente. "
+            f"URI: {jogador_uri}"
+        )
+
+        self._tratar_desconexao(jogador_uri)
+
+    def _monitorar_conexoes(self):
+
+        # Tempo máximo sem receber heartbeat antes de considerar
+        # que o jogador perdeu a conexão.
+        TIMEOUT = 60
+
+        while True:
+
+            # Verifica as conexões periodicamente.
+            time.sleep(5)
+
+            agora = time.time()
+            desconectados = []
+
+            with self.lock_heartbeat:
+
+                for jogador_uri, ultimo_heartbeat in list(
+                    self.ultimos_heartbeats.items()
+                ):
+
+                    if agora - ultimo_heartbeat > TIMEOUT:
+                        desconectados.append(jogador_uri)
+
+            # Trata os jogadores fora do Lock para não bloquear
+            # o recebimento de novos heartbeats.
+            for jogador_uri in desconectados:
+
+                print(
+                    f"[REDE] Timeout detectado para o jogador: "
+                    f"{jogador_uri}"
+                )
+
+                self._tratar_desconexao(jogador_uri)
+
+    def _tratar_desconexao(self, jogador_uri):
+
+        oponente_uri = None
+
+        # ==========================================
+        # REMOVE O JOGADOR DA FILA
+        # ==========================================
+
+        with self.lock:
+
+            if jogador_uri in self.fila:
+                self.fila.remove(jogador_uri)
+
+        # ==========================================
+        # LOCALIZA A PARTIDA DO JOGADOR
+        # ==========================================
+
+        with self.lock_partidas:
+
+            oponente_uri = self.partidas.get(jogador_uri)
+
+            if oponente_uri is not None:
+
+                # Remove os dois jogadores da estrutura da partida.
+                self.partidas.pop(jogador_uri, None)
+                self.partidas.pop(oponente_uri, None)
+
+        # ==========================================
+        # REMOVE O HEARTBEAT
+        # ==========================================
+
+        with self.lock_heartbeat:
+
+            self.ultimos_heartbeats.pop(jogador_uri, None)
+
+        # ==========================================
+        # LIMPA RESPOSTAS DE REVANCHE
+        # ==========================================
+
+        with self.lock_revanche:
+
+            self.respostas_revanche.pop(jogador_uri, None)
+
+            # Se a thread da partida estiver esperando
+            # uma resposta de revanche, acordamos a thread.
+            self.revanche_evento.set()
+
+        # ==========================================
+        # AVISA O OPONENTE
+        # ==========================================
+
+        if oponente_uri is not None:
+
+            try:
+
+                oponente = Pyro5.api.Proxy(oponente_uri)
+
+                oponente.receber_mensagem(
+                    "\nOponente desconectado. "
+                    "Você venceu por W.O."
+                )
+
+                oponente.finalizar()
+
+            except Exception as e:
+
+                print(
+                    f"[ERRO] Não foi possível avisar o oponente: {e}"
+                )
+
+            print(
+                "[SISTEMA] Partida removida da memória do servidor "
+                "após desconexão."
+            )
+
+    # ==========================================
+    # 6. MÁQUINA DE ESTADOS DA PARTIDA
     # ==========================================
 
     def _partida(self, uri1, uri2):
@@ -385,6 +546,16 @@ class ServidorJogo:
                                     j1.finalizar()
                                     j2.finalizar()
 
+                                    # Remove a partida da memória do servidor.
+                                    with self.lock_partidas:
+                                        self.partidas.pop(uri1, None)
+                                        self.partidas.pop(uri2, None)
+
+                                    # Remove os heartbeats dos jogadores.
+                                    with self.lock_heartbeat:
+                                        self.ultimos_heartbeats.pop(uri1, None)
+                                        self.ultimos_heartbeats.pop(uri2, None)
+
                                     break
 
                         # ==========================================
@@ -475,6 +646,16 @@ class ServidorJogo:
                                     j1.finalizar()
                                     j2.finalizar()
 
+                                    # Remove a partida da memória do servidor.
+                                    with self.lock_partidas:
+                                        self.partidas.pop(uri1, None)
+                                        self.partidas.pop(uri2, None)
+
+                                    # Remove os heartbeats dos jogadores.
+                                    with self.lock_heartbeat:
+                                        self.ultimos_heartbeats.pop(uri1, None)
+                                        self.ultimos_heartbeats.pop(uri2, None)
+
                                     break
 
                         # ==========================================
@@ -506,6 +687,16 @@ class ServidorJogo:
                 f"[ERRO] Partida interrompida "
                 f"(Erro ou Desconexão): {e}"
             )
+
+            # Limpa a partida da memória do servidor.
+            with self.lock_partidas:
+                self.partidas.pop(uri1, None)
+                self.partidas.pop(uri2, None)
+
+            # Remove os heartbeats dos jogadores.
+            with self.lock_heartbeat:
+                self.ultimos_heartbeats.pop(uri1, None)
+                self.ultimos_heartbeats.pop(uri2, None)
 
             try:
                 j1.finalizar()
