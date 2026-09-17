@@ -220,7 +220,7 @@ class ServidorJogo:
 
         # Tempo máximo sem receber heartbeat antes de considerar
         # que o jogador perdeu a conexão.
-        TIMEOUT = 60
+        TIMEOUT = 120
 
         while True:
 
