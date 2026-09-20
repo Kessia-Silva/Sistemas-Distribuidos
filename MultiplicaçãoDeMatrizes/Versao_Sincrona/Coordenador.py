@@ -3,30 +3,44 @@
 import pickle
 import socket
 
-def retornaLinhaColuna(l, c):
-    linha = []
-    coluna = []
-
-    for j in range(3):
-        linha.append(matriz[l][j])
-
-    for i in range(3):
-        coluna.append(matriz[i][c])
-
-    return linha, coluna
 
 
 servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 servidor.bind(("localhost", 5000))
 
 trabalhadores = []
-matriz = [
+matriz1 = [
     [1, 2, 3],
     [4, 5, 6],
     [7, 8, 9]
 ]
 
+matriz2 = [
+    [9, 8, 7],
+    [6, 5, 4],
+    [3, 2, 1]
+]
+
+matrizResultado = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]
+]
+
 servidor.listen()
+
+
+def retornaLinhaColuna(l, c):
+    linha = []
+    coluna = []
+
+    for j in range(3):
+        linha.append(matriz1[l][j])
+
+    for i in range(3):
+        coluna.append(matriz2[i][c])
+
+    return linha, coluna
 
 # Espera os trabalhadores se conectarem (trabalhadores 3) - Loop?
 for i in range(3):
@@ -44,11 +58,14 @@ for l in range(3):
         conexao, endereco = trabalhadores[i]
         mensagem = pickle.dumps((linha, coluna))
         conexao.send(mensagem)
+
         # Espera o trabalhador enviar o resultado
         mensagem = conexao.recv(1024).decode()
-        print(mensagem)
+        resultado = int(mensagem)
+        matrizResultado[l][c] = resultado
         i = (i + 1) % 3 # Para saber qual trabalhador está
-
+for linha in matrizResultado:
+    print(linha)
 # acabou o calculo, encerra tudo
 conexao.close()
 servidor.close()
