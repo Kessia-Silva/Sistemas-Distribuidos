@@ -8,19 +8,24 @@ import socket
 servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 servidor.bind(("localhost", 5000))
 
+#lista que vai armazenar os trabalhadores conectados
 trabalhadores = []
+
+# Primeira matriz que será multiplicada
 matriz1 = [
     [1, 2, 3],
     [4, 5, 6],
     [7, 8, 9]
 ]
 
+# Segunda matriz que será multiplicada
 matriz2 = [
     [9, 8, 7],
     [6, 5, 4],
     [3, 2, 1]
 ]
 
+# Matriz onde serão armazenadas os resultados
 matrizResultado = [
     [0, 0, 0],
     [0, 0, 0],
@@ -29,17 +34,21 @@ matrizResultado = [
 
 servidor.listen()
 
-
+# Função responsável por pegar uma linha da matriz1 
+# e uma coluna da matriz2
 def retornaLinhaColuna(l, c):
     linha = []
     coluna = []
 
+    # Percorre a linha l da matriz1
     for j in range(3):
         linha.append(matriz1[l][j])
 
+    # Percorre a coluna c da matriz2
     for i in range(3):
         coluna.append(matriz2[i][c])
 
+    # Retorna a linha e a coluna
     return linha, coluna
 
 # Espera os trabalhadores se conectarem (trabalhadores 3) - Loop?

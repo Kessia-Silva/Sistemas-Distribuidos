@@ -15,16 +15,18 @@ while True:
 
     if not mensagem:
         break
-
+    # Desempacota os dados recebidos.
     linha, coluna = pickle.loads(mensagem)
 
-    # Lógica para multiplicação de matriz
+    # Variavel que armazenará o resultado
     resultado = 0
 
+    # Percorre os elementos da linha e da coluna.
+    # E soma todos os resultados.
     for i in range(len(linha)):
         resultado += linha[i] * coluna[i]
 
-    # Resposta do trabalhador
+    # envia de volta para o servidor.
     cliente.send(str(resultado).encode())
 
 cliente.close()
